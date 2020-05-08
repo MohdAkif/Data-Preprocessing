@@ -1,0 +1,121 @@
+import os
+os.chdir('D:/fake-and-real-news-dataset')
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+t=pd.read_csv('True.csv')
+f=pd.read_csv('Fake.csv')
+
+#adding label in data
+t['catogory']=1
+f['catorory']=0
+
+# now i am are merging the two datasets
+df=pd.concat([t,f])
+
+#now we are checking the missing values
+
+# df.info()
+'''
+print(df.isnull().sum())
+print("total number of titles ",df.title.count())  #means each row have thier title
+print(df.subject.value_counts())  #majorty of news are from politics
+'''
+
+
+df['text']=df['text']+df['title']+df['subject']
+del(df['title'])
+del(df['subject'])
+del(df['date'])
+
+#print(df.head())
+
+#now removing the unwanted word from the data
+
+import nltk
+from nltk.corpus import stopwords
+from nltk.stem.porter import PorterStemmer
+ps= PorterStemmer()
+import string
+import re
+'''
+for i in range(23480):
+    df['text'][i]=str(df['text'][i])
+
+final_text=[]
+print("checking \n\n",type(df['text'][0]))
+for i in np.arange(23480):
+    text=re.sub('@[\w]*',' ',df['text'][i].astype('str'))
+    text=re.sub('[^a-bA-B]',' ',text)
+
+
+df['text'][0]='mohd akif'  
+print("dtype : ",type(df['text'][0]))
+
+'''
+stop = set(stopwords.words('english'))
+punctuation = list(string.punctuation)
+stop.update(punctuation)
+del(punctuation)
+
+stemmer = PorterStemmer()
+def stem_text(text):
+    final_text = []
+    for i in text.split():
+        if i.strip().lower() not in stop:
+            word = stemmer.stem(i.strip())
+            final_text.append(word)
+    return " ".join(final_text)    
+df.text = df.text.apply(stem_text)
+
+plt.figure(figsize=(20,20))
+
+from wordcloud import WordCloud,STOPWORDS
+plt.figure(figsize = (20,20))
+wc = WordCloud(max_words = 3000 , width = 1600 , height = 800 , stopwords = STOPWORDS).generate(" ".join(df.text))
+plt.imshow(wc , interpolation = 'bilinear')
+
+from sklearn.model_selection import train_test_split
+x_train,x_test,y_train,y_test = train_test_split(df.text,df.catogory)
+
+from sklearn.feature_extraction.text import CountVectorizer
+cv=CountVectorizer(min_df=0,max_df=1,ngram_range=(1,2))
+#transformed train reviews
+cv_train=cv.fit_transform(x_train)
+#transformed test reviews
+cv_test=cv.transform(x_test)
+
+print('BOW_cv_train:',cv_train.shape)
+print('BOW_cv_test:',cv_test.shape)
+
+#importing tensorflow files to make deeplearning model
+import keras
+from keras.models import Sequential
+from keras.layers import Dense
+import tensorflow as tf
+
+#making the network
+
+model = Sequential()
+model.add(Dense(units = 100 , activation = 'relu' , input_dim = cv_train_reviews.shape[1]))
+model.add(Dense(units = 50 , activation = 'relu'))
+model.add(Dense(units = 25 , activation = 'relu'))
+model.add(Dense(units = 10 , activation = 'relu'))
+model.add(Dense(units = 1 , activation = 'sigmoid'))
+
+#compiling the model
+model.compile(optimizer = 'adam' , loss = 'binary_crossentropy' , metrics = ['accuracy'])
+
+#fitting the model on dataset
+model.fit(cv_train,y_train , epochs = 5)
+
+#making output as 0 or 1 on the basis of prediction
+
+for i in range(len(pred)):
+    if(pred[i] > 0.6):
+        pred[i] = 1
+    else:
+        pred[i] = 0
+#seeing the accuracy of model  
+accuracy_score(pred,y_test)
+
